@@ -1,0 +1,68 @@
+{
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
+    "C_Cpp.default.cStandard": "c23",
+    "C_Cpp.errorSquiggles": "enabled",
+    "C_Cpp.enhancedColorization": "enabled",
+    "C_Cpp.clang_format_sortIncludes": true,
+    "C_Cpp.formatting": "clangFormat",
+    "C_Cpp.codeAnalysis.clangTidy.enabled": true,
+    "cmake.configureOnOpen": true,
+    "cmake.buildDirectory": "${workspaceFolder}/build",
+    "cmake.parallelJobs": 8,
+    "cmake.generator": "Unix Makefiles",
+    "cmake.debugConfig": {
+        "cwd": "${workspaceFolder}",
+        "args": []
+    },
+    "cmake.configureArgs": [
+        "-DCMAKE_BUILD_TYPE=Debug",
+        "-DENABLE_SANITIZERS=ON"
+    ],
+    "cmake.buildArgs": [
+        "--parallel",
+        "8"
+    ],
+    "files.associations": {
+        "*.c": "c",
+        "*.h": "c",
+        "*.cmake": "cmake",
+        "CMakeLists.txt": "cmake"
+    },
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/build": true,
+        "**/external/glfw/build": true
+    },
+    "files.watcherExclude": {
+        "**/build/**": true,
+        "**/external/glfw/build/**": true
+    },
+    "search.exclude": {
+        "**/build": true,
+        "**/external/glfw/build": true,
+        "**/external/glfw/docs": true,
+        "**/external/glfw/tests": true,
+        "**/external/glfw/examples": true
+    },
+    "editor.formatOnSave": true,
+    "editor.rulers": [80, 120],
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.detectIndentation": false,
+    "debug.onTaskErrors": "showErrors",
+    "debug.internalConsoleOptions": "openOnSessionStart",
+    "debug.showBreakpointsInOverviewRuler": true,
+    "terminal.integrated.defaultProfile.linux": "bash",
+    "terminal.integrated.defaultProfile.windows": "PowerShell",
+    "[c]": {
+        "editor.defaultFormatter": "ms-vscode.cpptools",
+        "editor.formatOnPaste": true,
+        "editor.formatOnSave": true,
+        "editor.formatOnType": true
+    }
+}
