@@ -1,3 +1,4 @@
+#define STB_TRUETYPE_IMPLEMENTATION
 #include "renderer.h"
 #include <math.h>
 #include <stdio.h>
@@ -117,6 +118,59 @@ bool renderer_init(Renderer *renderer, int width, int height, const char *title)
         buttons[i].width = button_width;
         buttons[i].height = button_height;
     }
+
+    // Load font
+    const char *font_path = "assets/fonts/RobotoMono-VariableFont_wght.ttf";
+    FILE *font_file = fopen(font_path, "rb");
+    if (!font_file)
+    {
+        fprintf(stderr, "Failed to open font file: %s\n", font_path);
+        return false;
+    }
+
+    fseek(font_file, 0, SEEK_END);
+    long font_size = ftell(font_file);
+    fseek(font_file, 0, SEEK_SET);
+
+    unsigned char *font_buffer = (unsigned char *)malloc(font_size);
+    if (!font_buffer)
+    {
+        fprintf(stderr, "Failed to allocate font buffer\n");
+        fclose(font_file);
+        return false;
+    }
+    fread(font_buffer, 1, font_size, font_file);
+    fclose(font_file);
+
+    // init stb_truetype
+    stbtt_fontinfo info;
+    if (!stbtt_InitFont(&info, font_buffer, stbtt_GetFontOffsetForIndex(font_buffer, 0)))
+    {
+        fprintf(stderr, "Failed to initialize font\n");
+        free(font_buffer);
+        return false;
+    }
+
+    // Create texture for glyphs
+    renderer->font_tex_size = 512;
+    glGenTextures(1, &renderer->text_texture);
+    glBindTexture(GL_TEXTURE_2D, renderer->text_texture);
+
+    renderer->cdata = (stbtt_packedchar *)malloc(sizeof(stbtt_packedchar) * 96);
+    unsigned char *bitmap = (unsigned char *)calloc(renderer->font_tex_size, renderer->font_tex_size);
+
+    stbtt_PackBegin(NULL, bitmap, renderer->font_tex_size, renderer->font_tex_size, 0, 1, NULL);
+    stbtt_PackFontRange(NULL, font_buffer, 0, 32.0f, 32, 126, renderer->cdata);
+    stbtt_PackEnd(NULL);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, renderer->font_tex_size, renderer->font_tex_size, 0, GL_ALPHA, GL_UNSIGNED_BYTE, bitmap);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    free(bitmap);
+    free(font_buffer);
 
     return true;
 }
@@ -331,26 +385,31 @@ void renderer_draw_text(Renderer *renderer, const char *text, float x, float y, 
     if (!renderer || !text)
         return;
 
-    glPushMatrix();
-    glTranslatef(x, y, 0);
-    glScalef(scale, scale, 1.0f);
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, renderer->text_texture);
 
     glColor3f(renderer->text_color[0], renderer->text_color[1], renderer->text_color[2]);
 
     for (const char *c = text; *c != '\0'; c++)
     {
-        // Рисуем примитивный "блок" для каждого символа (как на 2-м скриншоте)
-        glBegin(GL_LINE_LOOP);
-        glVertex2f(0.0f, 0.0f);
-        glVertex2f(8.0f, 0.0f);
-        glVertex2f(8.0f, 12.0f);
-        glVertex2f(0.0f, 12.0f);
-        glEnd();
+        if (*c < 32 || *c > 126)
+        {
+            x += 10 * scale;
+            continue;
+        }
 
-        glTranslatef(10.0f, 0.0f, 0.0f); // Сдвигаемся вправо
+        stbtt_aligned_quad q;
+        stbtt_GetPackedQuad(renderer->cdata, renderer->font_tex_size, renderer->font_tex_size, *c - 32, &x, &y, &q, 1);
+
+        glBegin(GL_QUADS);
+        glTexCoord2f(q.s0, q.t0); glVertex2f(q.x0, q.y0);
+        glTexCoord2f(q.s1, q.t0); glVertex2f(q.x1, q.y0);
+        glTexCoord2f(q.s1, q.t1); glVertex2f(q.x1, q.y1);
+        glTexCoord2f(q.s0, q.t1); glVertex2f(q.x0, q.y1);
+        glEnd();
     }
 
-    glPopMatrix();
+    glDisable(GL_TEXTURE_2D);
 }
 
 void renderer_draw_button_label(Renderer *renderer, const Button *button)

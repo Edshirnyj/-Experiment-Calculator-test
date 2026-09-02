@@ -1,6 +1,9 @@
 #include "GLFW/glfw3.h"
 #include "calc.h"
 
+#include "stb_truetype.h"
+
+
 typedef struct Renderer_struct
 {
     GLFWwindow *window;
@@ -14,7 +17,10 @@ typedef struct Renderer_struct
     int mouse_x;
     int mouse_y;
     bool mouse_pressed;
+
+    stbtt_packedchar *cdata;
     GLuint text_texture;
+    int font_tex_size;
 } Renderer;
 
 typedef struct Button_struct
