@@ -19,7 +19,7 @@ static void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 }
 
 int main(void) {
-    // Set error callback
+        // Set error callback
     glfwSetErrorCallback(error_callback);
 
     // Initialize GLFW

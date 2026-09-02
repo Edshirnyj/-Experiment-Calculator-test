@@ -42,7 +42,7 @@ void renderer_set_mouse_pressed(Renderer *renderer, bool pressed);
 bool renderer_is_mouse_pressed(const Button *button, const Renderer *renderer);
 void renderer_handle_click(Renderer *renderer, Calc *calc);
 bool renderer_should_close(const Renderer *renderer);
-
+float renderer_get_text_width(const char *text, float scale);
 void renderer_draw_text(Renderer *renderer, const char *text, float x, float y, float scale);
 void renderer_draw_button_label(Renderer *renderer, const Button *button);
 void renderer_setup_orthographic(Renderer *renderer);
