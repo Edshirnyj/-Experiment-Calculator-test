@@ -49,54 +49,71 @@ bool renderer_init(Renderer *renderer, int width, int height, const char *title)
     renderer->background_color[2] = 0.2f;
     renderer->background_color[3] = 1.0f;
 
-    button_count = 0;
-
-    const char *digit_labels[] = {"7", "8", "9", "4", "5", "6", "1", "2", "3", "0"};
-    for (int i = 0; i < 10; i++)
+    const char *labels1[] = {"C", "+/-", "%", "/"};
+    for (int i = 0; i < 4; i++)
     {
-        buttons[button_count].label = digit_labels[i];
-        buttons[button_count].type = 0;
-        buttons[button_count].value = i;
-        button_count++;
-    }
-
-    struct
-    {
-        const char *label;
-        int value;
-    } ops[] = {
-        {"+", OPERATION_ADD},
-        {"-", OPERATION_SUBTRACT},
-        {"*", OPERATION_MULTIPLY},
-        {"/", OPERATION_DIVIDE},
-        {"^", OPERATION_POWER},
-        {"sqrt", OPERATION_SQRT},
-        {"sin", OPERATION_SIN},
-        {"cos", OPERATION_COS},
-        {"tan", OPERATION_TAN},
-        {"=", -1},
-        {"C", -2},
-        {"+/-", -3},
-        {"Backspace", -4},
-    };
-
-    for (size_t i = 0; i < sizeof(ops) / sizeof(ops[0]); i++)
-    {
-        buttons[button_count].label = ops[i].label;
+        buttons[button_count].label = labels1[i];
         buttons[button_count].type = 1;
-        buttons[button_count].value = ops[i].value;
+        buttons[button_count].value = (i == 0) ? -2 : (i == 1) ? -3
+                                                               : -5; // -5 для %, -2 для C, -3 для +/-
         button_count++;
     }
+
+    const char *labels2[] = {"7", "8", "9", "*"};
+    for (int i = 0; i < 4; i++)
+    {
+        buttons[button_count].label = labels2[i];
+        buttons[button_count].type = 0;
+        buttons[button_count].value = (i < 3) ? (7 + i) : OPERATION_MULTIPLY;
+        button_count++;
+    }
+
+    const char *labels3[] = {"4", "5", "6", "-"};
+    for (int i = 0; i < 4; i++)
+    {
+        buttons[button_count].label = labels3[i];
+        buttons[button_count].type = 0;
+        buttons[button_count].value = (i < 3) ? (4 + i) : OPERATION_SUBTRACT;
+        button_count++;
+    }
+
+    const char *labels4[] = {"1", "2", "3", "+"};
+    for (int i = 0; i < 4; i++)
+    {
+        buttons[button_count].label = labels4[i];
+        buttons[button_count].type = 0;
+        buttons[button_count].value = (i < 3) ? (1 + i) : OPERATION_ADD;
+        button_count++;
+    }
+
+    const char *labels5[] = {"0", ".", "="};
+    buttons[button_count].label = labels5[0];
+    buttons[button_count].type = 0;
+    buttons[button_count].value = 0;
+    button_count++;
+    buttons[button_count].label = labels5[1];
+    buttons[button_count].type = 1;
+    buttons[button_count].value = -6;
+    button_count++;
+    buttons[button_count].label = labels5[2];
+    buttons[button_count].type = 1;
+    buttons[button_count].value = -1;
+    button_count++;
+
+    buttons[button_count].label = "Backspace";
+    buttons[button_count].type = 1;
+    buttons[button_count].value = -4;
+    button_count++;
 
     float button_width = (float)(width - BUTTON_PADDING * (BUTTON_COLUMNS + 1)) / BUTTON_COLUMNS;
     float button_height = (float)(height - DISPLAY_HEIGHT - BUTTON_PADDING * (BUTTON_ROWS + 1)) / BUTTON_ROWS;
 
     for (int i = 0; i < button_count; i++)
     {
-        int row = i / 4;
-        int col = i % 4;
+        int row = i / BUTTON_COLUMNS;
+        int col = i % BUTTON_COLUMNS;
         buttons[i].x = BUTTON_PADDING + col * (button_width + BUTTON_PADDING);
-        buttons[i].y = height - DISPLAY_HEIGHT - BUTTON_PADDING - row * (button_height + BUTTON_PADDING);
+        buttons[i].y = BUTTON_PADDING + row * (button_height + BUTTON_PADDING);
         buttons[i].width = button_width;
         buttons[i].height = button_height;
     }
@@ -150,25 +167,23 @@ void renderer_draw_calc(Renderer *renderer, const Calc *calc)
     }
 
     // Draw display
-    glColor3f(renderer->display_color[0],
-              renderer->display_color[1],
-              renderer->display_color[2]);
+    glColor3f(renderer->display_color[0], renderer->display_color[1], renderer->display_color[2]);
     glBegin(GL_QUADS);
-    glVertex2f(0, 0);
-    glVertex2f((float)renderer->width, 0);
-    glVertex2f((float)renderer->width, (float)DISPLAY_HEIGHT);
-    glVertex2f(0, (float)DISPLAY_HEIGHT);
+    glVertex2f(0, (float)renderer->height - (float)DISPLAY_HEIGHT);
+    glVertex2f((float)renderer->width, (float)renderer->height - (float)DISPLAY_HEIGHT);
+    glVertex2f((float)renderer->width, (float)renderer->height);
+    glVertex2f(0, (float)renderer->height);
     glEnd();
 
     const char *expression = calc_get_expression(calc);
     if (expression && strlen(expression) > 0)
     {
-        renderer_draw_text(renderer, expression, 10.0f, 10.0f, 2.0f);
+        renderer_draw_text(renderer, expression, 10.0f, (float)renderer->height - 90.0f, 2.0f);
     }
 
     char result[64];
     snprintf(result, sizeof(result), "%.6g", calc_get_current_value(calc));
-    renderer_draw_text(renderer, result, 10.0f, 50.0f, 3.0f);
+    renderer_draw_text(renderer, result, 10.0f, (float)renderer->height - 50.0f, 3.0f);
 
     // Draw buttons
     for (int i = 0; i < button_count; i++)
@@ -280,13 +295,21 @@ void renderer_handle_click(Renderer *renderer, Calc *calc)
                 {
                 case -1:
                     calc_calculate(calc);
-                    break;
+                    break; // =
                 case -2:
                     calc_clear(calc);
-                    break;
+                    break; // C
                 case -3:
                     calc_toggle_sign(calc);
-                    break;
+                    break; // +/-
+                case -4:
+                    calc_backspace(calc);
+                    break; // Backspace
+                case -5:   /* Процент (calc_percent) */
+                    break; // % (нужно добавить функцию в calc.c)
+                case -6:
+                    calc_input_decimal(calc);
+                    break; // .
                 default:
                     calc_input_operation(calc, (Operation)buttons[i].value);
                     break;
@@ -316,12 +339,15 @@ void renderer_draw_text(Renderer *renderer, const char *text, float x, float y, 
 
     for (const char *c = text; *c != '\0'; c++)
     {
-        glBegin(GL_LINES);
+        // Рисуем примитивный "блок" для каждого символа (как на 2-м скриншоте)
+        glBegin(GL_LINE_LOOP);
         glVertex2f(0.0f, 0.0f);
         glVertex2f(8.0f, 0.0f);
+        glVertex2f(8.0f, 12.0f);
+        glVertex2f(0.0f, 12.0f);
         glEnd();
 
-        glTranslatef(10.0f, 0.0f, 0.0f);
+        glTranslatef(10.0f, 0.0f, 0.0f); // Сдвигаемся вправо
     }
 
     glPopMatrix();
@@ -333,7 +359,7 @@ void renderer_draw_button_label(Renderer *renderer, const Button *button)
         return;
 
     float text_width = strlen(button->label) * 10.0f;
-    float text_height = 20.0f;
+    float text_height = 12.0f;
 
     float text_x = button->x + (button->width - text_width) / 2.0f;
     float text_y = button->y + (button->height - text_height) / 2.0f;
@@ -345,62 +371,14 @@ void renderer_draw_button_label(Renderer *renderer, const Button *button)
 
     for (const char *c = button->label; *c != '\0'; c++)
     {
-        glBegin(GL_LINE_STRIP);
-        switch (*c)
-        {
-        case '0':
-        case '1':
-        case '2':
-        case '3':
-        case '4':
-        case '5':
-        case '6':
-        case '7':
-        case '8':
-        case '9':
-            glVertex2f(0.0f, 0.0f);
-            glVertex2f(8.0f, 0.0f);
-            glVertex2f(8.0f, 12.0f);
-            glVertex2f(0.0f, 12.0f);
-            glVertex2f(0.0f, 0.0f);
-            break;
-        case '+':
-            glVertex2f(4.0f, 0.0f);
-            glVertex2f(4.0f, 8.0f);
-            glVertex2f(0.0f, 4.0f);
-            glVertex2f(8.0f, 4.0f);
-            break;
-        case '-':
-            glVertex2f(0.0f, 4.0f);
-            glVertex2f(8.0f, 4.0f);
-            break;
-        case '*':
-            glVertex2f(0.0f, 0.0f);
-            glVertex2f(8.0f, 8.0f);
-            glVertex2f(8.0f, 0.0f);
-            glVertex2f(0.0f, 8.0f);
-            break;
-        case '/':
-            glVertex2f(8.0f, 0.0f);
-            glVertex2f(0.0f, 8.0f);
-            break;
-        case '=':
-            glVertex2f(0.0f, 2.0f);
-            glVertex2f(8.0f, 8.0f);
-            glVertex2f(8.0f, 0.0f);
-            glVertex2f(0.0f, 8.0f);
-            break;
-        case '.':
-            glVertex2f(4.0f, 0.0f);
-            glVertex2f(4.0f, 8.0f);
-            break;
-        default:
-            glVertex2f(0.0f, 4.0f);
-            glVertex2f(8.0f, 4.0f);
-            break;
-        }
-
+        // Нарисуем простой прямоугольник для обозначения буквы
+        glBegin(GL_LINE_LOOP);
+        glVertex2f(0.0f, 0.0f);
+        glVertex2f(8.0f, 0.0f);
+        glVertex2f(8.0f, 12.0f);
+        glVertex2f(0.0f, 12.0f);
         glEnd();
+
         glTranslatef(10.0f, 0.0f, 0.0f);
     }
 

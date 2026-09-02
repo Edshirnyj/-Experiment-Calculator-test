@@ -26,6 +26,7 @@ typedef struct Button_struct
 } Button;
 
 bool renderer_init(Renderer *renderer, int width, int height, const char *title);
+void NewFunction(Renderer *renderer, int width, int height);
 void renderer_shutdown(Renderer *renderer);
 void renderer_begin_frame(Renderer *renderer);
 void renderer_end_frame(Renderer *renderer);
